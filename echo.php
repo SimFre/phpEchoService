@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+
 // Collect data
 $data = new stdClass();
 $data->post = $_POST;
@@ -8,12 +10,10 @@ $data->files = $_FILES;
 $data->server = $_SERVER;
 $data->headers = getallheaders();
 $data->input = file_get_contents("php://input");
-
 $data->contentMode = null;
 $data->contentType = null;
-$p = $_SERVER['PATH_INFO'] ?? "unknown";
-$data->pathInfo = $p;
 
+$p = $_SERVER['PATH_INFO'] ?? "unknown";
 switch($p) {
     case "/xml":
         $data->contentMode = "xml";
@@ -23,6 +23,7 @@ switch($p) {
     case "/plain":
         $data->contentMode = "plain";
         $data->contentType = "text/plain";
+    break;
     
     case "/json":
     default:
@@ -88,29 +89,33 @@ $json = json_encode($data, JSON_PRETTY_PRINT);
 
 switch ($data->contentMode) {
     case "plain":
-    header("Content-type: text/plain");
-    echo "\n=== POST ===\n";
-    print_r($data->post);
+        header("Content-type: text/plain");
+        echo "\n=== POST ===\n";
+        print_r($data->post);
 
-    echo "\n=== GET ===\n";
-    print_r($data->get);
+        echo "\n=== GET ===\n";
+        print_r($data->get);
 
-    echo "\n=== COOKIE ===\n";
-    print_r($data->cookie);
+        echo "\n=== COOKIE ===\n";
+        print_r($data->cookie);
 
-    echo "\n=== FILES ===\n";
-    print_r($data->files);
+        echo "\n=== FILES ===\n";
+        print_r($data->files);
 
-    echo "\n=== REQUEST ===\n";
-    print_r($data->headers);
+        echo "\n=== SERVER ===\n";
+        print_r($data->server);
 
-    echo "\n=== INPUT ===\n";
-    var_dump($data->input);
+        echo "\n=== HEADERS ===\n";
+        print_r($data->headers);
+
+        echo "\n=== INPUT ===\n";
+        var_dump($data->input);
     break;
 
     case "json":
-    header("Content-type: text/json");
-    echo $json;
+    default:
+        header("Content-type: text/json");
+        echo $json;
     break;
     
     //case "xml":
