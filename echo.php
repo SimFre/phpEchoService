@@ -1,4 +1,5 @@
 <?php
+
 error_reporting(E_ALL);
 
 // Collect data
@@ -14,121 +15,58 @@ $data->contentMode = null;
 $data->contentType = null;
 
 $p = $_SERVER['PATH_INFO'] ?? "unknown";
+$output = "";
 switch($p) {
     case "/xml":
         $data->contentMode = "xml";
         $data->contentType = "text/xml";
-    break;
-    
+        $xml = '<root>';
+        $xml .= generate_xml_from_array($data, "root", 0);
+        $xml .= '</root>';
+        $doc = new DOMDocument('1.0', 'utf-8');
+        $doc->preserveWhiteSpace = false;
+        $doc->formatOutput = true;
+        $doc->loadXML($xml);
+        $output = $doc->saveXML();
+        break;
+
     case "/plain":
         $data->contentMode = "plain";
         $data->contentType = "text/plain";
-    break;
-    
+        $output = print_r($data, true);
+        break;
+
     case "/json":
     default:
         $data->contentMode = "json";
-        $data->contentType = "text/json";
-    break;
+        $data->contentType = "application/json";
+        $output = json_encode($data, JSON_PRETTY_PRINT);
+        break;
 }
 
-//$contentMode = "plain";
-//$contentType = "text/plain";
-//if (!empty($data->headers['Accept'])) {
-//    $accept = $data->headers['Accept'];
-//    if (substr_count($accept, "text/json")) {
-///        $contentMode = "json";
-///        $contentType = "text/json";
-//    } elseif (substr_count($accept, "application/json")) {
-//        $contentMode = "json";
-//        $contentType = "application/json";
-//    //} elseif (substr_count($accept, "application/xml")) {
-//    //    $contentMode = "xml";
-//    //    $contentType = "application/xml";
-//    //} elseif (substr_count($accept, "text/xml")) {
-//    //    $contentMode = "xml";
-//    //    $contentType = "text/xml";
-//    }
-//}
-
-//$serverHeaders = array();
-//foreach ($_SERVER as $key => $value) {
-//    if (strpos($key, 'HTTP_') === 0) {
-//        $chunks = explode('_', $key);
-//        $value = end($chunks);
-//        $i = count($chunks);
-//        if ($i == 1) {
-//            $serverHeaders[$value] = "_n/a_";
-//        } else {
-//            unset($chunks[$i-1]);
-//            $key = implode("_", $chunks);
-//            $serverHeaders[$key] = $value;
-//        }
-//    }
-//}
-
-//$serverHeadersTxt = "";
-//foreach ($_SERVER as $key => $value) {
-//    if (strpos($key, 'HTTP_') === 0) {
-//        $chunks = explode('_', $key);
-//        $header = '';
-//        for ($i = 1; $y = sizeof($chunks) - 1, $i < $y; $i++) {
-//            $header .= ucfirst(strtolower($chunks[$i])).'-';
-//        }
-//        $header .= ucfirst(strtolower($chunks[$i])).': '.$value;
-//        error_log($header);
-//    }
-//}
-
-//error_log("Content-type: $contentType");
-//error_log("X-Content-mode: $contentMode");
-
-$json = json_encode($data, JSON_PRETTY_PRINT);
-
-// Set output header
-
-switch ($data->contentMode) {
-    case "plain":
-        header("Content-type: text/plain");
-        echo "\n=== POST ===\n";
-        print_r($data->post);
-
-        echo "\n=== GET ===\n";
-        print_r($data->get);
-
-        echo "\n=== COOKIE ===\n";
-        print_r($data->cookie);
-
-        echo "\n=== FILES ===\n";
-        print_r($data->files);
-
-        echo "\n=== SERVER ===\n";
-        print_r($data->server);
-
-        echo "\n=== HEADERS ===\n";
-        print_r($data->headers);
-
-        echo "\n=== INPUT ===\n";
-        var_dump($data->input);
-    break;
-
-    case "json":
-    default:
-        header("Content-type: text/json");
-        echo $json;
-    break;
-    
-    //case "xml":
-    //$array = array('hello' => 'world', 'good' => 'morning');
-    //$xml = simplexml_load_string('<'.'?xml version='1.0' encoding="utf-8"?'..'><echo />');
-    //foreach ($array as $k=>$v) {
-    //    $xml->addChild($k, $v);
-    //}
-    //break;
 
 
-
+function generate_xml_from_array($array, $node_name, $depth = 0)
+{
+    $xml = '';
+    if (is_array($array) || is_object($array)) {
+        foreach ($array as $key=>$value) {
+            if (is_numeric($key)) {
+                $key = $node_name;
+            }
+            $content = generate_xml_from_array($value, $node_name, $depth +1);
+            if ($depth == 0) {
+                $xml .= '<' . $key . '>' . $content . '</'.$key.'>';
+            } else {
+                $xml .= '<data key="' . $key . '">' . $content . '</data>';
+            }
+        }
+    } else {
+        $xml = htmlspecialchars($array, ENT_QUOTES);
+    }
+    return $xml;
 }
 
-error_log($json);
-echo PHP_EOL;
+header("Content-type: " . $data->contentType);
+echo $output . PHP_EOL;
+error_log($output . PHP_EOL);
